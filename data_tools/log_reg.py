@@ -61,11 +61,11 @@ class BinaryClassifier:
             self.init_weights = weights
             
         if self.penalty_type is 'lasso':
-            reg_loss = (self.penalty_lambda_)
-            reg_gradient = (self.penalty_lambda_)
+            reg_loss = (self.penalty_lambda_/m)
+            reg_gradient = (-2*self.penalty_lambda_/m)
         
         elif self.penalty_type is 'ridge':
-            reg_loss = (self.penalty_lambda_/2)# * np.square(self.init_weights))/m
+            reg_loss = (self.penalty_lambda_/2)
             reg_gradient = (-2*self.penalty_lambda_/m)
             
         else:
@@ -84,7 +84,8 @@ class BinaryClassifier:
                 loss_suffix = np.sum(reg_loss * np.square(weights)/m)
                 
             elif self.penalty_type is 'lasso':
-                pass
+                gradient_suffix = reg_gradient * np.where(weights==0,0,np.where(weights>0,1,-1))
+                loss_suffix = np.sum(reg_loss * np.abs(weights)/m)
             
             else:
                 gradient_suffix = 0
