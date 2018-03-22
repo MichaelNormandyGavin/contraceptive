@@ -33,25 +33,25 @@ class BinaryClassifier:
             self.penalty_type = list(regularization.keys())[0]
             self.penalty_lambda_ = regularization.get(self.penalty_type)
     
-    def _gradient_descent(self,X,y,lr=.1,pandas=False,full_history=False,weights=None,early_stopping=True):
+    def _gradient_descent(self, X, y, lr=.1, pandas=False, full_history=False, weights=None, early_stopping=True):
         
         if pandas or (isinstance(X,pd.DataFrame) & isinstance(y,pd.DataFrame)):
-            self.X = X.values
-            self.y = y.values
-            self.Xnames = X.columns
-            self.ynames = y.columns
+            X = X.values
+            y = y.values
+            Xnames = X.columns
+            ynames = y.columns
         else:
-            self.X = X
-            self.y = y
-            self.Xnames = [i for i in range(X.shape[1])]
+            X = X
+            y = y
+            Xnames = [i for i in range(X.shape[1])]
             
             
         '''learning rate for gradient descent algorithim'''    
         self.lr = lr
             
-        m = len(self.X)
+        m = len(X)
             
-        n_features = self.X.shape[1]
+        n_features = X.shape[1]
         
         '''creating the weights, which will typically be all zeros'''
             
@@ -91,9 +91,7 @@ class BinaryClassifier:
                 gradient_suffix = 0
                 loss_suffix = 0
             
-            X = self.X
             lr = self.lr
-            y = self.y
             
             '''p = prediction probabilities (0 < p < 1)'''
             
@@ -133,17 +131,90 @@ class BinaryClassifier:
         
         final_weights = weights_list[highest_auc]
         
-        self.weights_final = weights_list[highest_auc]
+        #self.weights_final = weights_list[highest_auc]
         
-        weights_df = pd.DataFrame(weights_list,columns=self.Xnames)
+        weights_df = pd.DataFrame(weights_list,columns=Xnames)
         
         full_df = pd.concat([weights_df,scores_df],axis=1)
         
-        self.final_weights, self.full_history = final_weights, full_df
+        #self.final_weights, self.full_history = final_weights, full_df
         
-        print('this test worked!')
+        #print('this test worked!')
         
         return final_weights, full_df
+    
+    def fit(self, X, y, **kwargs):
+        
+        '''Function to apply gradient descent. Compatible with multi-output
+        
+        X: features array (pandas or numpy)
+        y: labels array (pandas or numpy)
+        **kwargs: args to feed into gradient descent function'''
+        
+        if (isinstance(X,pd.DataFrame) & isinstance(y,pd.DataFrame)):
+            self.X = X.values
+            self.y = y.values
+            self.Xnames = X.columns
+            self.ynames = y.columns
+        else:
+            self.X = X
+            self.y = y
+            self.Xnames = [i for i in range(X.shape[1])]
+            self.ynames = [i for i in range(y.shape[1])]
+            
+        weights_all = []
+        
+        history = []
+            
+        for i in range(len(self.ynames)):
+            
+            print('fitting to target {}...'.format(self.ynames[i]))
+            
+            w, d = self._gradient_descent(X=X,y=self.y[:,i],**kwargs)
+            
+            weights_all.append(w)
+            
+            history.append(d)
+            
+        print('Complete!')
+        
+        self.fitted_weights = np.array(weights_all)
+        self.history = history
+        
+    def predict_proba(self, X, return_pandas=True):
+        '''Use the fitted weights to predict sigmoid probabilities for each target
+        
+        X: features array (pandas or numpy)'''
+        
+        assert self.fitted_weights is not None, "Please use fit method before attempting to predict"
+        
+        p = sigmoid(np.dot(X, self.fitted_weights.T))
+        
+        if return_pandas:
+            p =pd.DataFrame(data=p,columns=self.ynames)
+        
+        self.probabilities_matrix = p
+        
+        return p      
+            
+    def predict(self, X, **kwargs):
+        '''Use the fitted weights and probabilities to predict classification for each input
+        
+        X: features array (pandas or numpy)'''
+        
+        p = self.predict_proba(X=X,**kwargs)
+        
+        p = pd.DataFrame(p) if not isinstance(p,pd.DataFrame) else p
+        
+        max_p = p.idxmax(axis=1)
+        
+        wide_p = pd.get_dummies(max_p)
+        
+        wide_p.columns = self.ynames
+        
+        self.predictions_matrix = wide_p
+            
+            
             
         
             
