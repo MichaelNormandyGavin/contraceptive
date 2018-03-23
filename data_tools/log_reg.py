@@ -77,7 +77,7 @@ class BinaryClassifier:
         
         weights = self.init_weights
         
-        for i in range(1000):
+        for i in range(5000):
             
             if self.penalty_type is 'ridge':
                 gradient_suffix = reg_gradient * weights
