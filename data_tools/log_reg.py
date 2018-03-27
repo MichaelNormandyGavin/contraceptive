@@ -2,6 +2,8 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.externals import joblib
+import os
 
 def log_loss(predictions,actual,eps=1e-15):
     '''take an array of prediction probabilities (clipped to avoid undefined values) and measures accuracy while
@@ -213,6 +215,21 @@ class BinaryClassifier:
         wide_p.columns = self.ynames
         
         self.predictions_matrix = wide_p
+    
+    def save_model(self, filename='binary_clf_model.pkl'):
+        
+        joblib.dump(self,filename)
+        
+        self.file = filename
+    
+    def load_model(self,filename=None):
+        
+        if filename is None:
+            filename = self.file
+        
+        loaded_file = joblib.load(filename)
+        
+        return loaded_file
             
             
             
